@@ -206,3 +206,4 @@ Run-Section "ZeroTier Full Cleanup" {
 }
 
 Write-Host "All setup and cleanup tasks completed successfully."
+
