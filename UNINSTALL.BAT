@@ -1,34 +1,53 @@
 @echo off
 setlocal
 
-:: Ensure Administrator Privileges
+:: --- Ensure administrator privileges ---
 NET SESSION >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    PowerShell -Command "Start-Process cmd -ArgumentList '/c \"\"%~f0\"\"' -Verb RunAs"
+    echo Elevation required — relaunching as administrator...
+    powershell -Command "Start-Process -FilePath '%comspec%' -ArgumentList '/c cd /d \"%~dp0\" && \"%~f0\"' -Verb RunAs"
     exit /b
 )
 
-echo Uninstalling UltraVNC...
+echo =========================================
+echo   UltraVNC Uninstall Script (Admin)
+echo =========================================
 echo.
 
-:: Stop UltraVNC Service if running
-net stop "UltraVNC" >nul 2>&1
-
-:: Uninstall UltraVNC service if present
-if exist "%windir%\vnc\winvnc.exe" (
-    "%windir%\vnc\winvnc.exe" -uninstall >nul 2>&1
+:: --- Stop UltraVNC service if running ---
+echo Stopping UltraVNC service if running...
+sc query "uvnc_service" >nul 2>&1
+if %errorlevel% equ 0 (
+    net stop "uvnc_service" /y >nul 2>&1
+    taskkill /f /im winvnc.exe >nul 2>&1
+    echo UltraVNC stopped.
+) else (
+    echo UltraVNC service not found, skipping stop.
 )
-
-:: Remove firewall rules
-echo Removing firewall rules...
-netsh advfirewall firewall delete rule name="VNC Allow Inbound" >nul 2>&1
-
-netsh advfirewall firewall delete rule name="VNC Block Outbound" >nul 2>&1
-
-:: Remove VNC folder
-echo Deleting UltraVNC folder...
-rd /s /q "%windir%\vnc" >nul 2>&1
-
 echo.
-echo UltraVNC Uninstalled Successfully.
+
+:: --- Uninstall and remove old files ---
+echo Checking for UltraVNC installation...
+if exist "%windir%\vnc\winvnc.exe" (
+    echo Uninstalling UltraVNC service...
+    "%windir%\vnc\winvnc.exe" -uninstall >nul 2>&1
+    echo Removing UltraVNC directory...
+    rmdir /s /q "%windir%\vnc"
+    echo UltraVNC uninstalled successfully.
+) else (
+    echo UltraVNC not found, skipping uninstall.
+)
+echo.
+
+:: --- Remove old firewall rules ---
+echo Removing old firewall rules...
+netsh advfirewall firewall delete rule name="VNC Allow Inbound" >nul 2>&1
+netsh advfirewall firewall delete rule name="VNC Block Outbound" >nul 2>&1
+echo Firewall rules removed.
+echo.
+
+echo =========================================
+echo   UltraVNC Uninstallation Complete
+echo =========================================
 pause
+endlocal
