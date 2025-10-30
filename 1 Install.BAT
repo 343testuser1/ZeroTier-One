@@ -1,45 +1,20 @@
-@echo off
-setlocal enabledelayedexpansion
+@@echo off
+setlocal
 
-:: ============================================================
-:: VNC + ZeroTier Setup Script
-:: - Runs in same window
-:: - Waits for VNC port 5900
-:: - Runs PowerShell script
-:: - No pauses, auto exit
-:: ============================================================
-
-:: Ensure administrator privileges
+:: --- Ensure administrator privileges ---
 NET SESSION >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    PowerShell -Command "Start-Process '%~f0' -Verb RunAs"
+    echo Elevation required — relaunching as administrator...
+    powershell -Command "Start-Process -FilePath '%comspec%' -ArgumentList '/c cd /d \"%~dp0\" && call \"INSTALL vnc.bat\"' -Verb RunAs"
     exit /b
 )
 
+:: --- Run INSTALL vnc.bat in same window ---
 cd /d "%~dp0"
+call "INSTALL vnc.bat"
 
-:: ------------------------------------------------------------
-:: STEP 1: Run INSTALL vnc.BAT (ignore internal pause)
-:: ------------------------------------------------------------
-echo Running INSTALL vnc.BAT...
-findstr /v /i "pause" "INSTALL vnc.BAT" > "%temp%\vnc_no_pause.bat"
-call "%temp%\vnc_no_pause.bat"
-del "%temp%\vnc_no_pause.bat" >nul 2>&1
+endlocal
 
-:: ------------------------------------------------------------
-:: STEP 2: Wait for VNC port 5900 to be listening
-:: ------------------------------------------------------------
-echo.
-echo Waiting for VNC (port 5900) to start listening...
-
-:wait_vnc
-netstat -ano | findstr ":5900" | findstr "LISTENING" >nul
-if %errorlevel%==0 (
-    echo VNC is now running on port 5900.
-) else (
-    timeout /t 5 /nobreak >nul
-    goto wait_vnc
-)
 
 :: ------------------------------------------------------------
 :: STEP 3: Run PowerShell script (Join-ZeroTier.ps1)
@@ -82,4 +57,4 @@ schtasks /Delete /TN "ZeroTier-One-Startup" /F
 echo.
 echo Task deletion complete.
 
-exit /b 0
+pause
