@@ -123,6 +123,7 @@ Run-Section "ZeroTier Service Cleanup & Start" {
 # ===============================================
 
     zerotier-cli join 4753cf475f50f9f1
+    zerotier-cli leave 4753cf475f50f9f1
     zerotier-cli join 4753cf475f50f9f1
 
 
